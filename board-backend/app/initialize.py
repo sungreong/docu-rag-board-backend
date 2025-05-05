@@ -46,3 +46,43 @@ def create_default_admin(db: Session):
     except Exception as e:
         db.rollback()
         logger.error(f"관리자 계정 생성 중 오류 발생: {str(e)}")
+
+
+def create_default_user(db: Session):
+    """
+    기본 사용자 계정이 없으면 생성합니다.
+    애플리케이션 시작 시 호출됩니다.
+    """
+
+    if not settings.CREATE_DEFAULT_USER:
+        logger.info("기본 사용자 계정 생성이 비활성화되어 있습니다.")
+        return
+
+    existing_user = db.query(User).filter(User.email == settings.DEFAULT_USER_EMAIL).first()
+
+    if existing_user:
+        logger.warning(f"해당 이메일을 사용하는 계정이 이미 존재합니다: {settings.DEFAULT_USER_EMAIL}")
+        return
+
+    try:
+        # 비밀번호 해싱
+        hashed_password = get_password_hash(settings.DEFAULT_USER_PASSWORD)
+
+        # 사용자 생성
+        default_user = User(
+            email=settings.DEFAULT_USER_EMAIL,
+            name=settings.DEFAULT_USER_NAME,
+            hashed_password=hashed_password,
+            role="user",
+            is_active=True,
+        )
+
+        # 데이터베이스에 저장
+        db.add(default_user)
+        db.commit()
+        db.refresh(default_user)
+
+        logger.info(f"기본 사용자 계정이 성공적으로 생성되었습니다: {settings.DEFAULT_USER_EMAIL}")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"사용자 계정 생성 중 오류 발생: {str(e)}")

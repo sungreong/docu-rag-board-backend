@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_EMAIL: str = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@boardrag.com")
     DEFAULT_ADMIN_PASSWORD: str = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin1234!")
     CREATE_DEFAULT_ADMIN: bool = os.getenv("CREATE_DEFAULT_ADMIN", "True").lower() == "true"
+    # 기본 사용자 계정 설정
+    DEFAULT_USER_EMAIL: str = os.getenv("DEFAULT_USER_EMAIL", "user@boardrag.com")
+    DEFAULT_USER_PASSWORD: str = os.getenv("DEFAULT_USER_PASSWORD", "user1234!")
+    DEFAULT_USER_NAME: str = os.getenv("DEFAULT_USER_NAME", "user")
+    CREATE_DEFAULT_USER: bool = os.getenv("CREATE_DEFAULT_USER", "True").lower() == "true"
 
     class Config:
         case_sensitive = True

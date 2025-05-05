@@ -43,6 +43,15 @@ class Document(Base):
     file_metadata = Column(JSONB, nullable=True)
     is_public = Column(Boolean, default=False)  # 전체 공유 여부 (True: 공개, False: 비공개)
 
+    # 추가 필드
+    vectorize_requested = Column(Boolean, default=False)  # 벡터화 요청 상태
+    vectorize_requested_at = Column(DateTime, nullable=True)  # 벡터화 요청 일시
+    vectorize_requested_by = Column(UUID(as_uuid=True), nullable=True)  # 벡터화 요청한 사용자
+
+    vector_delete_requested = Column(Boolean, default=False)  # 벡터 삭제 요청 상태
+    vector_delete_requested_at = Column(DateTime, nullable=True)  # 벡터 삭제 요청 일시
+    vector_delete_requested_by = Column(UUID(as_uuid=True), nullable=True)  # 벡터 삭제 요청한 사용자
+
     # 사용자와의 관계
     user = relationship("User", back_populates="documents")
 

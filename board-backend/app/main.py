@@ -6,7 +6,7 @@ import os
 
 from app.database import engine, Base, get_db
 from app.routers import auth, documents, admin, search, chunks, tasks
-from app.initialize import create_default_admin
+from app.initialize import create_default_admin, create_default_user
 import logging
 
 # 로깅 설정
@@ -108,6 +108,8 @@ async def startup_event():
     try:
         # 기본 관리자 계정 생성
         create_default_admin(db)
+        # 기본 사용자 계정 생성
+        create_default_user(db)
     except Exception as e:
         logger.error(f"초기화 과정에서 오류 발생: {str(e)}")
     finally:

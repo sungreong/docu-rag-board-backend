@@ -468,7 +468,7 @@ def update_document(
 
     # 업데이트할 필드 유효성 검사
     update_data = document_update.dict(exclude_unset=True)
-
+    print(f"update_data: {update_data}")
     # 일반 사용자가 수정하면 승인대기 상태로 변경 (관리자는 상태 유지)
     if current_user.role != "admin" and "status" not in update_data:
         update_data["status"] = "승인대기"
@@ -563,8 +563,8 @@ def download_document(
         if not document:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
-        # 문서 소유자 또는 관리자만 접근 가능
-        if document.user_id != current_user.id and current_user.role != "admin":
+        # 문서가 공개되지 않은 경우, 소유자 또는 관리자만 접근 가능
+        if not document.is_public and document.user_id != current_user.id and current_user.role != "admin":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
 
         # 파일이 없는 경우

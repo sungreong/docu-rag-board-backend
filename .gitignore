@@ -1,3 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pywz
+
+
 # IDE 관련 설정 파일/폴더
 .vscode/
 .idea/

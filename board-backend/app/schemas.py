@@ -117,6 +117,9 @@ class Document(DocumentBase):
     file_names: Optional[List[str]] = None
     file_paths: Optional[List[str]] = None
     file_types: Optional[List[str]] = None
+    uploader_email: Optional[EmailStr] = None
+    uploader_name: Optional[str] = None
+    is_public: Optional[bool] = None
 
     class Config:
         orm_mode = True
