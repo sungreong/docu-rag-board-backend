@@ -1,0 +1,31 @@
+# Database settings
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=password
+DB_NAME=board_rag
+
+# JWT Settings
+SECRET_KEY=your-secret-key-here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# MinIO Settings
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_SECURE=false
+MINIO_BUCKET_NAME=documents
+
+# Milvus Settings
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+MILVUS_COLLECTION=document_chunks
+
+# Default Admin Account Settings
+DEFAULT_ADMIN_EMAIL=admin@boardrag.com
+DEFAULT_ADMIN_PASSWORD=admin1234!
+CREATE_DEFAULT_ADMIN=true
+
+# Application Settings
+RECREATE_TABLES=true  # 개발 환경: true, 프로덕션 환경: false 

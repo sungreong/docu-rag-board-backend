@@ -1,0 +1,20 @@
+# PostgreSQL 설정
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_DB=board_rag
+
+# JWT 설정
+SECRET_KEY=your-secret-key-here-change-this-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# MinIO 설정
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+MINIO_SECURE=false
+MINIO_BUCKET_NAME=documents
+
+# Milvus 설정 (향후 사용)
+MILVUS_HOST=milvus
+MILVUS_PORT=19530
+MILVUS_COLLECTION=document_chunks 

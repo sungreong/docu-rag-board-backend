@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 서비스
+  postgres:
+    image: postgres:14
+    container_name: board-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-board_rag}
+    volumes:
+      - postgres-prod-data:/var/lib/postgresql/data
+    networks:
+      - board-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO 서비스
+  minio:
+    image: minio/minio:latest
+    container_name: board-minio-prod
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio-prod-data:/data
+    networks:
+      - board-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # 백엔드 API 서비스
+  backend:
+    build: 
+      context: ./board-backend
+      dockerfile: Dockerfile
+    container_name: board-backend-prod
+    restart: always
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      DB_NAME: ${POSTGRES_DB:-board_rag}
+      SECRET_KEY: ${SECRET_KEY:-"your-secret-key-here-change-this-in-production"}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_SECURE: "false"
+      MINIO_BUCKET_NAME: documents
+      RECREATE_TABLES: "false"
+    networks:
+      - board-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # 프론트엔드 서비스 (빌드된 버전)
+  frontend:
+    build: 
+      context: ./board-front
+      dockerfile: Dockerfile
+    container_name: board-frontend-prod
+    restart: always
+    networks:
+      - board-network
+    depends_on:
+      - backend
+
+  # Nginx 프록시
+  nginx:
+    image: nginx:alpine
+    container_name: board-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certbot/conf:/etc/letsencrypt:ro
+      - ./nginx/certbot/www:/var/www/certbot:ro
+    networks:
+      - board-network
+    depends_on:
+      - frontend
+      - backend
+      - minio
+
+volumes:
+  postgres-prod-data:
+  minio-prod-data:
+
+networks:
+  board-network:
+    driver: bridge 

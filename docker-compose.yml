@@ -1,0 +1,175 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 서비스
+  postgres:
+    image: postgres:14
+    container_name: board-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: board_rag
+      TZ: "Asia/Seoul"  # 한국 시간대 설정
+      PGTZ: "Asia/Seoul"  # PostgreSQL 시간대 설정
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO 서비스
+  minio:
+    image: minio/minio:latest
+    container_name: board-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      # - minio-data:/data
+      - ./minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Redis - Celery 메시지 브로커
+  redis:
+    image: redis:alpine
+    container_name: board-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # 백엔드 API 서비스
+  backend:
+    build: 
+      context: ./board-backend
+      dockerfile: Dockerfile
+    container_name: board-backend
+    restart: always
+    environment:
+      APP_MODE: web  # 웹 서버 모드
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: board_rag
+      SECRET_KEY: "srlee$01"
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_SECURE: "false"
+      MINIO_BUCKET_NAME: documents
+      MINIO_EXTERNAL_ENDPOINT: localhost:9000
+      RECREATE_TABLES: "true"
+      # Celery 설정
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./board-backend:/app  # 소스 코드 마운트
+      - shared_tmp:/app/shared_tmp  # 파일 업로드를 위한 공유 디렉토리
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Celery 워커
+  celery-worker:
+    build:
+      context: ./board-backend
+      dockerfile: Dockerfile
+    container_name: board-celery-worker
+    restart: always
+    environment:
+      APP_MODE: worker  # Celery 워커 모드
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: board_rag
+      SECRET_KEY: "srlee$01"
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_SECURE: "false"
+      MINIO_BUCKET_NAME: documents
+      MINIO_EXTERNAL_ENDPOINT: localhost:9000
+      # Celery 설정
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - ./board-backend:/app  # 소스 코드 마운트
+      - shared_tmp:/app/shared_tmp  # 파일 업로드를 위한 공유 디렉토리
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Celery Flower - 작업 모니터링 UI
+  celery-flower:
+    build:
+      context: ./board-backend
+      dockerfile: Dockerfile
+    container_name: board-celery-flower
+    restart: always
+    environment:
+      APP_MODE: flower  # Celery Flower 모드
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery-worker
+
+  # 프론트엔드 서비스
+  # frontend:
+  #   image: node:16-alpine
+  #   container_name: board-frontend
+  #   working_dir: /app
+  #   volumes:
+  #     - ./board-front:/app
+  #   command: sh -c "npm install && npm start"
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - REACT_APP_API_URL=http://localhost:8000/api
+  #   depends_on:
+  #     - backend
+
+volumes:
+  postgres-data:
+  minio-data:
+  redis-data:
+  shared_tmp:  # 백엔드와 Celery 워커 간 파일 공유용 

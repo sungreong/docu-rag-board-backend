@@ -1,0 +1,21 @@
+# 가상 환경
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 환경 변수
+.env
+
+# 로그
+*.log
+
+# 임시 파일
+/tmp/
+.DS_Store
+
+# IDE 설정
+.idea/
+.vscode/
+*.swp
+*.swo 
