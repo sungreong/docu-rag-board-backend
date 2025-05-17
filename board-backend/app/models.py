@@ -96,6 +96,7 @@ class Tag(Base):
     is_system = Column(Boolean, default=False)  # 시스템 제공 태그 여부
     created_at = Column(DateTime, default=datetime.utcnow)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # 태그 생성자 (관리자)
+    color = Column(String, default="#3B82F6")  # 기본 색상 추가
 
     # 사용자 태그와의 관계
     user_tags = relationship("UserTag", back_populates="tag", cascade="all, delete-orphan")

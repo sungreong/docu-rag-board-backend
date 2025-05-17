@@ -180,8 +180,9 @@ class SearchQuery(BaseModel):
 
 # 태그 관련 스키마
 class TagBase(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=50)
     description: Optional[str] = None
+    color: Optional[str] = Field(default="#3B82F6", pattern="^#[0-9A-Fa-f]{6}$")  # HEX 색상 코드
 
 
 class TagCreate(TagBase):
@@ -191,6 +192,7 @@ class TagCreate(TagBase):
 class TagUpdate(TagBase):
     name: Optional[str] = None
     description: Optional[str] = None
+    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")  # HEX 색상 코드
 
 
 class TagResponse(TagBase):
@@ -198,6 +200,7 @@ class TagResponse(TagBase):
     is_system: bool
     created_at: datetime
     created_by: Optional[UUID] = None
+    color: str = "#3B82F6"  # 기본 색상
 
     class Config:
         from_attributes = True
