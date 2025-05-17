@@ -36,6 +36,14 @@ SUPPORTED_FILE_TYPES = [
     SupportedFileType(extension=".txt", description="텍스트 파일", max_size_mb=10),
     SupportedFileType(extension=".xlsx", description="Microsoft Excel 문서", max_size_mb=30),
     SupportedFileType(extension=".pptx", description="Microsoft PowerPoint 문서", max_size_mb=50),
+    SupportedFileType(extension=".jpg", description="JPEG 이미지", max_size_mb=20),
+    SupportedFileType(extension=".jpeg", description="JPEG 이미지", max_size_mb=20),
+    SupportedFileType(extension=".png", description="PNG 이미지", max_size_mb=20),
+    SupportedFileType(extension=".gif", description="GIF 이미지", max_size_mb=20),
+    SupportedFileType(extension=".zip", description="ZIP 압축파일", max_size_mb=100),
+    SupportedFileType(extension=".csv", description="CSV 파일", max_size_mb=20),
+    SupportedFileType(extension=".json", description="JSON 파일", max_size_mb=10),
+    SupportedFileType(extension=".md", description="Markdown 파일", max_size_mb=10),
 ]
 
 # 허용되는 파일 확장자 목록
@@ -148,21 +156,15 @@ async def create_document(
     upload_files = unique_files
     print(f"총 업로드할 파일 수: {len(upload_files)}")
 
-    # 파일이 있는지 확인
-    if not upload_files or len(upload_files) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No files provided",
-        )
-
-    # 파일 타입 검증
-    for file in upload_files:
-        file_extension = os.path.splitext(file.filename)[1].lower()
-        if file_extension not in ALLOWED_EXTENSIONS:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"File type not allowed for file '{file.filename}'. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}",
-            )
+    # 파일이 있는 경우에만 파일 타입 검증
+    if upload_files:
+        for file in upload_files:
+            file_extension = os.path.splitext(file.filename)[1].lower()
+            if file_extension not in ALLOWED_EXTENSIONS:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"File type not allowed for file '{file.filename}'. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}",
+                )
 
     # 태그 처리 (JSON 문자열에서 Python 리스트로 변환)
     try:
