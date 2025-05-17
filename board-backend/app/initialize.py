@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.orm import Session
-from app.models import User
+from app.models import User, Tag
 from app.auth import get_password_hash
 from app.config import settings
 
@@ -34,7 +34,12 @@ def create_default_admin(db: Session):
 
         # 관리자 계정 생성
         admin_user = User(
-            email=settings.DEFAULT_ADMIN_EMAIL, hashed_password=hashed_password, role="admin", is_active=True
+            email=settings.DEFAULT_ADMIN_EMAIL,
+            hashed_password=hashed_password,
+            role="admin",
+            is_active=True,
+            is_approved=True,
+            name="관리자",
         )
 
         # 데이터베이스에 저장
@@ -75,6 +80,7 @@ def create_default_user(db: Session):
             hashed_password=hashed_password,
             role="user",
             is_active=True,
+            is_approved=True,
         )
 
         # 데이터베이스에 저장
@@ -86,3 +92,36 @@ def create_default_user(db: Session):
     except Exception as e:
         db.rollback()
         logger.error(f"사용자 계정 생성 중 오류 발생: {str(e)}")
+
+
+def create_default_tags(db: Session) -> None:
+    """기본 시스템 태그를 생성합니다."""
+    default_tags = [
+        {"name": "공지사항", "description": "공지사항 관련 문서", "is_system": True},
+        {"name": "중요", "description": "중요 문서", "is_system": True},
+        {"name": "보고서", "description": "각종 보고서", "is_system": True},
+        {"name": "인사", "description": "인사 관련 문서", "is_system": True},
+        {"name": "회계", "description": "회계/재무 관련 문서", "is_system": True},
+        {"name": "개발", "description": "개발 관련 문서", "is_system": True},
+        {"name": "마케팅", "description": "마케팅 관련 문서", "is_system": True},
+        {"name": "영업", "description": "영업 관련 문서", "is_system": True},
+        {"name": "프로젝트", "description": "프로젝트 관련 문서", "is_system": True},
+        {"name": "회의", "description": "회의 관련 문서", "is_system": True},
+        {"name": "계약", "description": "계약 관련 문서", "is_system": True},
+        {"name": "교육", "description": "교육/훈련 관련 문서", "is_system": True},
+        {"name": "정책", "description": "정책/지침 관련 문서", "is_system": True},
+        {"name": "규정", "description": "규정/규칙 관련 문서", "is_system": True},
+    ]
+
+    for tag_data in default_tags:
+        # 이미 존재하는 태그인지 확인
+        existing_tag = db.query(Tag).filter(Tag.name == tag_data["name"]).first()
+        if not existing_tag:
+            tag = Tag(**tag_data)
+            db.add(tag)
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating default tags: {str(e)}")

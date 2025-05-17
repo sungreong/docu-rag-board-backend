@@ -6,7 +6,8 @@ import os
 
 from app.database import engine, Base, get_db
 from app.routers import auth, documents, admin, search, chunks, tasks
-from app.initialize import create_default_admin, create_default_user
+from app.routers import tags, admin_tags  # 태그 관련 라우터 추가
+from app.initialize import create_default_admin, create_default_user, create_default_tags
 import logging
 
 # 로깅 설정
@@ -69,6 +70,8 @@ app.include_router(admin.router, prefix="/api")
 app.include_router(search.router, prefix="/api")
 app.include_router(chunks.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
+app.include_router(tags.router, prefix="/api")  # 사용자 태그 라우터 추가
+app.include_router(admin_tags.router, prefix="/api")  # 관리자 태그 라우터 추가
 
 
 @app.get("/api/health", tags=["health"])
@@ -110,6 +113,8 @@ async def startup_event():
         create_default_admin(db)
         # 기본 사용자 계정 생성
         create_default_user(db)
+        # 기본 시스템 태그 생성
+        create_default_tags(db)
     except Exception as e:
         logger.error(f"초기화 과정에서 오류 발생: {str(e)}")
     finally:

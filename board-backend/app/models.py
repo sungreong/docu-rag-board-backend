@@ -22,6 +22,15 @@ class User(Base):
 
     # 관계 설정
     documents = relationship("Document", back_populates="user")
+    # 태그 관계 추가
+    user_tags = relationship("UserTag", back_populates="user", cascade="all, delete-orphan")
+    tag_quota = relationship(
+        "UserTagQuota",
+        back_populates="user",
+        foreign_keys="UserTagQuota.user_id",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 
 class Document(Base):
@@ -73,6 +82,73 @@ class Document(Base):
         Index("idx_document_dates", start_date, end_date),  # 날짜 범위 검색 가속
         Index("idx_document_public", is_public),  # 공개 문서 필터링 가속
     )
+
+
+# 태그 관련 모델 추가
+class Tag(Base):
+    """시스템에서 관리하는 전체 태그 목록"""
+
+    __tablename__ = "tags"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False, unique=True, index=True)
+    description = Column(String, nullable=True)
+    is_system = Column(Boolean, default=False)  # 시스템 제공 태그 여부
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # 태그 생성자 (관리자)
+
+    # 사용자 태그와의 관계
+    user_tags = relationship("UserTag", back_populates="tag", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_tag_name", name),  # 태그 이름으로 검색 가속
+        Index("idx_tag_system", is_system),  # 시스템 태그 필터링 가속
+    )
+
+    def __repr__(self):
+        return f"<Tag(id={self.id}, name='{self.name}', is_system={self.is_system})>"
+
+
+class UserTag(Base):
+    """사용자별 개인 태그 관계 모델"""
+
+    __tablename__ = "user_tags"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # 관계 설정
+    user = relationship("User", back_populates="user_tags")
+    tag = relationship("Tag", back_populates="user_tags")
+
+    __table_args__ = (
+        Index("idx_user_tag_user", user_id),  # 사용자별 태그 검색 가속
+        Index("idx_user_tag_combined", user_id, tag_id, unique=True),  # 사용자-태그 조합 유일성 보장
+    )
+
+    def __repr__(self):
+        return f"<UserTag(user_id={self.user_id}, tag_id={self.tag_id})>"
+
+
+class UserTagQuota(Base):
+    """사용자별 태그 할당량 모델"""
+
+    __tablename__ = "user_tag_quotas"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True)
+    max_tags = Column(Integer, default=20)  # 기본 최대 20개 태그 할당
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+
+    # 관계 설정
+    user = relationship("User", back_populates="tag_quota", foreign_keys=[user_id])
+    updated_by_user = relationship("User", foreign_keys=[updated_by])  # 이름 변경 및 back_populates 제거
+
+    def __repr__(self):
+        return f"<UserTagQuota(user_id={self.user_id}, max_tags={self.max_tags})>"
 
 
 class DocumentFile(Base):

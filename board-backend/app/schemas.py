@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, UUID4, constr, validator
 from uuid import UUID
 
 
@@ -176,3 +176,70 @@ class SearchQuery(BaseModel):
     query: str
     filters: Optional[Dict[str, Any]] = None
     limit: Optional[int] = 10
+
+
+# 태그 관련 스키마
+class TagBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class TagCreate(TagBase):
+    pass
+
+
+class TagUpdate(TagBase):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class TagResponse(TagBase):
+    id: UUID
+    is_system: bool
+    created_at: datetime
+    created_by: Optional[UUID] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserTagBase(BaseModel):
+    user_id: UUID
+    tag_id: UUID
+
+
+class UserTagCreate(UserTagBase):
+    pass
+
+
+class UserTagResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    tag_id: UUID
+    created_at: datetime
+    tag: TagResponse
+
+    class Config:
+        from_attributes = True
+
+
+class UserTagQuotaBase(BaseModel):
+    max_tags: int
+
+
+class UserTagQuotaUpdate(UserTagQuotaBase):
+    pass
+
+
+class UserTagQuotaResponse(UserTagQuotaBase):
+    id: UUID
+    user_id: UUID
+    updated_at: datetime
+    updated_by: Optional[UUID] = None
+
+    class Config:
+        from_attributes = True
+
+
+class Message(BaseModel):
+    message: str
